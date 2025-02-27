@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -77,6 +78,49 @@ func init() {
 	prometheus.MustRegister(processingDuration)
 	prometheus.MustRegister(entityCount)
 }
+func convertEntities(entities []graph.DocumentEntity) []graph.Entity {
+	result := make([]graph.Entity, len(entities))
+	for i, e := range entities {
+		// Create a new Entity from DocumentEntity fields
+		result[i] = graph.Entity{
+			ID:         generateID(e.Label, e.Type, i),
+			Label:      e.Label,
+			Type:       e.Type,
+			Properties: e.Properties,
+			Confidence: e.Confidence,
+		}
+	}
+	return result
+}
+
+// generateID creates a unique ID for an entity
+func generateID(label string, entityType string, index int) string {
+	return strings.ToLower(strings.ReplaceAll(label, " ", "_")) + "_" +
+		strings.ToLower(entityType) + "_" + strconv.Itoa(index)
+}
+
+func convertRelations(relations []graph.DocumentRelationship) []graph.Relationship {
+	result := make([]graph.Relationship, len(relations))
+	for i, r := range relations {
+		// Create a new Relationship from DocumentRelationship fields
+		result[i] = graph.Relationship{
+			ID:         generateRelationshipID(r.Type, r.From, r.To, i),
+			Type:       r.Type,
+			From:       r.From,
+			To:         r.To,
+			Properties: r.Properties,
+			Confidence: r.Confidence,
+		}
+	}
+	return result
+}
+
+// generateRelationshipID creates a unique ID for a relationship
+func generateRelationshipID(relType string, from string, to string, index int) string {
+	return strings.ToLower(strings.ReplaceAll(from, " ", "_")) + "_" +
+		strings.ToLower(relType) + "_" +
+		strings.ToLower(strings.ReplaceAll(to, " ", "_")) + "_" + strconv.Itoa(index)
+}
 
 // NLPProcessor implements basic NLP processing using prose
 type NLPProcessor struct {
@@ -103,7 +147,6 @@ func (p *NLPProcessor) Process(ctx context.Context, content []byte, metadata map
 	// Create prose document
 	doc, err := prose.NewDocument(string(content))
 	if err != nil {
-		p.logger.WithError(err).Error("Failed to create prose document")
 		return nil, err
 	}
 
@@ -119,8 +162,8 @@ func (p *NLPProcessor) Process(ctx context.Context, content []byte, metadata map
 	// Create processed document
 	processed := &graph.Document{
 		Content:     string(content),
-		Entities:    entities,
-		Relations:   relations,
+		Entities:    convertEntities(entities),
+		Relations:   convertRelations(relations),
 		Keywords:    keywords,
 		Metadata:    metadata,
 		ProcessedAt: time.Now(),
@@ -135,9 +178,9 @@ func (p *NLPProcessor) Process(ctx context.Context, content []byte, metadata map
 	return processed, nil
 }
 
-func (p *NLPProcessor) extractEntitiesAndRelations(doc *prose.Document) ([]graph.Entity, []graph.Relationship) {
-	entities := make([]graph.Entity, 0)
-	relations := make([]graph.Relationship, 0)
+func (p *NLPProcessor) extractEntitiesAndRelations(doc *prose.Document) ([]graph.DocumentEntity, []graph.DocumentRelationship) {
+	entities := make([]graph.DocumentEntity, 0)
+	relations := make([]graph.DocumentRelationship, 0)
 
 	tokens := doc.Tokens()
 	tokensText := make([]string, len(tokens))
@@ -200,7 +243,7 @@ func (p *NLPProcessor) extractEntitiesAndRelations(doc *prose.Document) ([]graph
 	for pattern, entityType := range entityPatterns {
 		matches := regexp.MustCompile(pattern).FindAllStringIndex(text, -1)
 		for _, match := range matches {
-			entity := graph.Entity{
+			entity := graph.DocumentEntity{
 				Label: text[match[0]:match[1]],
 				Type:  entityType,
 				Properties: map[string]interface{}{
@@ -214,12 +257,18 @@ func (p *NLPProcessor) extractEntitiesAndRelations(doc *prose.Document) ([]graph
 		}
 	}
 
+	// Convert tokens to []*prose.Token
+	tokenPtrs := make([]*prose.Token, len(tokens))
+	for i := range tokens {
+		tokenPtrs[i] = &tokens[i]
+	}
+
 	// Extract tech-specific relationships
 	for i, tok := range tokens {
 		if tok.Tag == "VB" || tok.Tag == "VBZ" || tok.Tag == "VBP" {
 			if p.isTechnicalVerb(tok.Text) || p.isBankingVerb(tok.Text) {
-				subj := p.findNearestEntity(tokens, i, -1)
-				obj := p.findNearestEntity(tokens, i, 1)
+				subj := p.findNearestEntityToken(tokenPtrs, i, -1)
+				obj := p.findNearestEntityToken(tokenPtrs, i, 1)
 
 				if subj != nil && obj != nil {
 					relType := p.getTechRelationType(tok.Text)
@@ -227,7 +276,7 @@ func (p *NLPProcessor) extractEntitiesAndRelations(doc *prose.Document) ([]graph
 						relType = p.getBankingRelationType(tok.Text)
 					}
 
-					rel := graph.Relationship{
+					rel := graph.DocumentRelationship{
 						Type:       relType,
 						From:       subj.Text,
 						To:         obj.Text,
@@ -240,27 +289,23 @@ func (p *NLPProcessor) extractEntitiesAndRelations(doc *prose.Document) ([]graph
 	}
 	// Enhanced relation extraction
 	techRelations := map[string]string{
-		"depends":      RelationDependsOn,
-		"implements":   RelationImplements,
-		"calls":        RelationCommunicates,
-		"extends":      RelationExtends,
-		"configures":   RelationConfigures,
-		"deploys":      RelationDeploys,
-		"monitors":     RelationMonitors,
-		"tests":        RelationTests,
-		"integrates":   RelationIntegrates,
-		"orchestrates": RelationOrchestrates,
+		"depends":    RelationDependsOn,
+		"implements": RelationImplements,
+		"calls":      RelationCommunicates,
+		"extends":    RelationExtends,
+		"configures": RelationConfigures,
+		"deploys":    RelationDeploys,
 	}
 
 	// Enhanced relation extraction using techRelations
 	for i, tok := range tokens {
 		if tok.Tag == "VB" || tok.Tag == "VBZ" || tok.Tag == "VBP" {
 			if relType, exists := techRelations[strings.ToLower(tok.Text)]; exists {
-				subj := p.findNearestEntity(tokens, i, -1)
-				obj := p.findNearestEntity(tokens, i, 1)
+				subj := p.findNearestEntityToken(tokenPtrs, i, -1)
+				obj := p.findNearestEntityToken(tokenPtrs, i, 1)
 
 				if subj != nil && obj != nil {
-					rel := graph.Relationship{
+					rel := graph.DocumentRelationship{
 						Type:       relType,
 						From:       subj.Text,
 						To:         obj.Text,
@@ -275,10 +320,10 @@ func (p *NLPProcessor) extractEntitiesAndRelations(doc *prose.Document) ([]graph
 	return entities, relations
 }
 
-func (p *NLPProcessor) resolveCoreferenceChains(entities []graph.Entity, doc *prose.Document) []graph.Entity {
+func (p *NLPProcessor) resolveCoreferenceChains(entities []graph.DocumentEntity, doc *prose.Document) []graph.DocumentEntity {
 	// Simple pronoun resolution
 	pronounIndices := mapset.NewSet[int]()
-	entityMap := make(map[string]*graph.Entity)
+	entityMap := make(map[string]*graph.DocumentEntity)
 	sentences := doc.Sentences()
 
 	// First pass: collect entities and pronouns
@@ -291,7 +336,7 @@ func (p *NLPProcessor) resolveCoreferenceChains(entities []graph.Entity, doc *pr
 	}
 
 	// Second pass: resolve pronouns
-	resolved := make([]graph.Entity, len(entities))
+	resolved := make([]graph.DocumentEntity, len(entities))
 	copy(resolved, entities)
 
 	for _, sentIdx := range pronounIndices.ToSlice() {
@@ -313,7 +358,7 @@ func (p *NLPProcessor) resolveCoreferenceChains(entities []graph.Entity, doc *pr
 		}
 
 		// Look for the nearest matching entity in previous sentences
-		var bestMatch *graph.Entity
+		var bestMatch *graph.DocumentEntity
 		bestDistance := float64(1000000)
 
 		for i := containingSentence; i >= 0 && i >= containingSentence-3; i-- {
@@ -344,9 +389,9 @@ func (p *NLPProcessor) canBeCoreferent(pronoun, entity string) bool {
 	pronoun = strings.ToLower(pronoun)
 
 	// Gender and number agreement
-	malePronouns := mapset.NewSet[string]("he", "him", "his")
-	femalePronouns := mapset.NewSet[string]("she", "her", "hers")
-	pluralPronouns := mapset.NewSet[string]("they", "them", "their", "theirs")
+	malePronouns := mapset.NewSet("he", "him", "his")
+	femalePronouns := mapset.NewSet("she", "her", "hers")
+	pluralPronouns := mapset.NewSet("they", "them", "their", "theirs")
 
 	if malePronouns.Contains(pronoun) {
 		return p.isMalePerson(entity)
@@ -538,7 +583,7 @@ func (p *NLPProcessor) isPronoun(word string) bool {
 }
 
 func (p *NLPProcessor) isStopWord(word string) bool {
-	stopWords := mapset.NewSet[string]("the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by")
+	stopWords := mapset.NewSet("the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by")
 	return stopWords.Contains(strings.ToLower(word))
 }
 
@@ -579,7 +624,7 @@ func (p *NLPProcessor) isPlural(entity string) bool {
 }
 
 func (p *NLPProcessor) isTechnicalVerb(verb string) bool {
-	technicalVerbs := mapset.NewSet[string](
+	technicalVerbs := mapset.NewSet(
 		"deploys", "implements", "integrates", "connects",
 		"hosts", "serves", "queries", "processes",
 		"executes", "compiles", "builds", "tests",
@@ -609,7 +654,7 @@ func (p *NLPProcessor) getTechRelationType(verb string) string {
 	return "RELATED_TO"
 }
 
-func (p *NLPProcessor) findNearestEntity(tokens []prose.Token, pos int, direction int) *prose.Token {
+func (p *NLPProcessor) findNearestEntityToken(tokens []*prose.Token, pos int, direction int) *prose.Token {
 	maxDistance := 5
 	patterns := []string{
 		// Existing tech patterns
@@ -631,11 +676,11 @@ func (p *NLPProcessor) findNearestEntity(tokens []prose.Token, pos int, directio
 		end = max(pos-maxDistance, 0)
 	}
 
-	for i := start; direction > 0 && i < end || direction < 0 && i >= end; i += direction {
+	for i := start; (direction > 0 && i < end) || (direction < 0 && i >= end); i += direction {
 		token := tokens[i]
 		for _, pattern := range patterns {
 			if strings.Contains(strings.ToLower(token.Text), strings.ToLower(pattern)) {
-				return &tokens[i]
+				return tokens[i]
 			}
 		}
 	}
@@ -644,10 +689,10 @@ func (p *NLPProcessor) findNearestEntity(tokens []prose.Token, pos int, directio
 }
 
 func (p *NLPProcessor) isBankingVerb(verb string) bool {
-	bankingVerbs := mapset.NewSet[string](
+	bankingVerbs := mapset.NewSet(
 		"transfers", "deposits", "withdraws", "pays",
-		"invests", "lends", "borrows", "processes",
-		"approves", "declines", "validates", "authorizes",
+		"invests", "loans", "borrows", "finances",
+		"credits", "debits", "authorizes", "processes",
 	)
 	return bankingVerbs.Contains(strings.ToLower(verb))
 }
@@ -659,13 +704,13 @@ func (p *NLPProcessor) getBankingRelationType(verb string) string {
 		"withdraws":  "WITHDRAWS_FROM",
 		"pays":       "PAYS_TO",
 		"invests":    "INVESTS_IN",
-		"lends":      "LENDS_TO",
+		"loans":      "LOANS_TO",
 		"borrows":    "BORROWS_FROM",
-		"processes":  "PROCESSES",
-		"approves":   "APPROVES",
-		"declines":   "DECLINES",
-		"validates":  "VALIDATES",
+		"finances":   "FINANCES",
+		"credits":    "CREDITS",
+		"debits":     "DEBITS",
 		"authorizes": "AUTHORIZES",
+		"processes":  "PROCESSES",
 	}
 
 	if relType, exists := relationMap[strings.ToLower(verb)]; exists {

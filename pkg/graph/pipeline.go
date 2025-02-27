@@ -32,7 +32,7 @@ func init() {
 	prometheus.MustRegister(documentProcessedTotal)
 }
 
-// TextPipeline implements the Pipeline interface
+// TextPipeline implements a document processing pipeline
 type TextPipeline struct {
 	processors []DocumentProcessor
 	mutex      sync.RWMutex
@@ -113,73 +113,45 @@ func (p *TextPipeline) BatchProcess(ctx context.Context, docs []*Document) error
 
 // Process runs the document through all processors in the pipeline
 func (p *TextPipeline) Process(ctx context.Context, doc *Document) error {
+	if doc == nil {
+		return fmt.Errorf("cannot process nil document")
+	}
+
 	p.logger.WithField("doc_id", doc.ID).Info("Processing document")
-	timer := prometheus.NewTimer(pipelineProcessingDuration.WithLabelValues("single"))
-	defer timer.ObserveDuration()
 
 	p.mutex.RLock()
-	defer p.mutex.RUnlock()
+	processorCount := len(p.processors)
+	p.mutex.RUnlock()
 
-	if len(p.processors) == 0 {
+	if processorCount == 0 {
 		return fmt.Errorf("no processors configured in pipeline")
 	}
 
-	// Create channels for pipeline stages
-	type stage struct {
-		doc *Document
-		err error
-	}
+	// Single document processing
+	timer := prometheus.NewTimer(pipelineProcessingDuration.WithLabelValues("single"))
+	defer timer.ObserveDuration()
 
-	stages := make([]chan stage, len(p.processors))
-	for i := range stages {
-		stages[i] = make(chan stage, 1)
-	}
+	var processedDoc *Document
+	var err error
 
-	// Start goroutine for each processor
-	var wg sync.WaitGroup
+	// Apply each processor sequentially
 	for i, processor := range p.processors {
-		wg.Add(1)
-		go func(i int, proc DocumentProcessor) {
-			defer wg.Done()
-			defer close(stages[i])
-
-			// Get input from previous stage or use initial document
-			var input *Document
-			if i == 0 {
-				input = doc
-			} else {
-				select {
-				case <-ctx.Done():
-					return
-				case prevStage := <-stages[i-1]:
-					if prevStage.err != nil {
-						stages[i] <- stage{err: prevStage.err}
-						return
-					}
-					input = prevStage.doc
-				}
-			}
-
-			// Process document
-			processed, err := proc.Process(ctx, []byte(input.Content), input.Metadata)
-			stages[i] <- stage{doc: processed, err: err}
-
-		}(i, processor)
-	}
-
-	// Wait for all processors to complete
-	wg.Wait()
-
-	// Check final result
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case finalStage := <-stages[len(stages)-1]:
-		if finalStage.err != nil {
-			return finalStage.err
+		// For the first processor, use the input document
+		if i == 0 {
+			processedDoc, err = processor.Process(ctx, []byte(doc.Content), doc.Metadata)
+		} else {
+			// For subsequent processors, use the output of the previous processor
+			processedDoc, err = processor.Process(ctx, []byte(processedDoc.Content), processedDoc.Metadata)
 		}
-		*doc = *finalStage.doc
-		p.logger.WithField("doc_id", doc.ID).Info("Document processing completed")
-		return nil
+
+		if err != nil {
+			return fmt.Errorf("processor %d failed: %v", i, err)
+		}
 	}
+
+	// Update the original document with processed content
+	*doc = *processedDoc
+
+	p.logger.WithField("doc_id", doc.ID).Info("Document processing completed")
+	return nil
 }
