@@ -96,7 +96,7 @@ QDRANT_PORT=
 GOOGLE_TOKEN_FILE=
 GOOGLE_CREDENTIALS_FILE=
 QDRANT_API_KEY=
-USE_OLLAMA_DEEPSEEK=true/false
+USE_OLLAMA_DEEPSEEK=
 ```
 
 3. Config your claude's config:
@@ -119,26 +119,34 @@ USE_OLLAMA_DEEPSEEK=true/false
     "aio-mcp": {
       "command": "aio-mcp",
       "env": {
-        "ENABLE_TOOLS": "jira,confluence,youtube,fetch,gitlab,script,rag,openai_compatible",
-        "QDRANT_HOST": "",
-        "QDRANT_PORT": "",
-        "QDRANT_API_KEY": "",
-        "ATLASSIAN_HOST": "",
-        "ATLASSIAN_EMAIL": "",
-        "ATLASSIAN_TOKEN": "",
-        "GITLAB_HOST": "https://gitlab.com",
-        "GITLAB_TOKEN": "",
-        "BRAVE_API_KEY": "",
+        "ENABLE_TOOLS": "",
+        "OPENAI_BASE_URL": "",
         "GOOGLE_AI_API_KEY": "",
+        "GITLAB_TOKEN": "",
+        "GITLAB_HOST": "",
+        "QDRANT_HOST": "",
+        "QDRANT_API_KEY": "",
+        
         "PROXY_URL": "",
         "OPENAI_API_KEY": "",
-        "OPENAI_BASE_URL": "",
-        "OPENAI_EMBEDDING_MODEL": "",
         "GOOGLE_TOKEN_FILE": "",
-        "GOOGLE_CREDENTIALS_FILE": ""
-        "USE_OLLAMA_DEEPSEEK": "true"
+        "GOOGLE_CREDENTIALS_FILE": "",
+        
+        "ATLASSIAN_TOKEN": "",
+        "BRAVE_API_KEY": "",
+        "QDRANT_PORT": "",
+        "ATLASSIAN_HOST": "",
+        "ATLASSIAN_EMAIL": "",
+
+        "USE_OPENROUTER": "", // "true" if you want to use openrouter for AI to help with reasoning on `tool_use_plan`, default is false
+        "DEEPSEEK_API_KEY": "", // specify the deepseek api key if you want to use deepseek for AI to help with reasoning on `tool_use_plan`
+        "OPENROUTER_API_KEY": "", // specify the openrouter api key if you want to use openrouter for AI to help with reasoning on `tool_use_plan`
+        "DEEPSEEK_API_BASE": "", // specify the deepseek api key if you want to use deepseek for AI to help with reasoning on `tool_use_plan`
+        "USE_OLLAMA_DEEPSEEK": "", // "true" if you want to use deepseek with local ollama, default is false
+        "OLLAMA_URL": "" // default with http://localhost:11434
       }
     }
+  }
 }
 ```
 
@@ -407,6 +415,15 @@ Arguments:
 - `title` (String) (Required): Merge request title
 - `description` (String): Merge request description
 
+### gitlab_clone_repo
+
+Clone or update a GitLab repository locally
+
+Arguments:
+
+- `project_path` (String) (Required): Project/repo path
+- `ref` (String): Branch name or tag (optional, defaults to project's default branch)
+
 ### gmail_search
 
 Search emails in Gmail using Gmail's search syntax
@@ -674,6 +691,16 @@ Arguments:
 - `branchFromThought` (Number): Branching point thought number
 - `branchId` (String): Branch identifier
 - `needsMoreThoughts` (Boolean): If more thoughts are needed
+- `result` (String): Final result or conclusion from this thought
+- `summary` (String): Brief summary of the thought's key points
+
+### sequentialthinking_history
+
+Retrieve the thought history for the current thinking process
+
+Arguments:
+
+- `branchId` (String): Optional branch ID to get history for
 
 ### tool_manager
 
@@ -686,12 +713,12 @@ Arguments:
 
 ### tool_use_plan
 
-Tạo kế hoạch sử dụng các công cụ đang kích hoạt để giải quyết yêu cầu
+Create a plan using available tools to solve the request
 
 Arguments:
 
-- `request` (String) (Required): Yêu cầu cần lập kế hoạch
-- `context` (String) (Required): Ngữ cảnh liên quan đến yêu cầu
+- `request` (String) (Required): Request to plan for
+- `context` (String) (Required): Context related to the request
 
 ### youtube_transcript
 
