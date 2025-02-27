@@ -143,6 +143,14 @@ func toolUsePlanHandler(arguments map[string]interface{}) (*mcp.CallToolResult, 
 		return mcp.NewToolResultError("Deepseek tool must be enabled to generate plans"), nil
 	}
 
+	// Check for configuration
+	useOllama := os.Getenv("USE_OLLAMA_DEEPSEEK") == "true"
+	useOpenRouter := os.Getenv("USE_OPENROUTER") == "true"
+
+	if !useOllama && !useOpenRouter && os.Getenv("DEEPSEEK_API_KEY") == "" {
+		return mcp.NewToolResultError("Either USE_OLLAMA_DEEPSEEK, USE_OPENROUTER must be true, or DEEPSEEK_API_KEY must be set"), nil
+	}
+
 	systemPrompt := fmt.Sprintf(`You are a tool usage planning assistant. Create a detailed execution plan using the currently enabled tools: %s
 
 Context: %s
@@ -163,10 +171,22 @@ Output format:
 		},
 	}
 
-	resp, err := services.DefaultDeepseekClient().CreateChatCompletion(
+	client := services.DefaultDeepseekClient()
+	if client == nil {
+		return mcp.NewToolResultError("Failed to initialize client"), nil
+	}
+
+	modelName := "deepseek-reasoner"
+	if useOllama {
+		modelName = "deepseek-r1:8b"
+	} else if useOpenRouter {
+		modelName = "deepseek/deepseek-r1-distill-qwen-32b" // or any other model available on OpenRouter
+	}
+
+	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
-			Model:       "deepseek-reasoner",
+			Model:       modelName,
 			Messages:    messages,
 			Temperature: 0.3,
 		},

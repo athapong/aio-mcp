@@ -57,7 +57,7 @@ func deepseekReasoningHandler(arguments map[string]interface{}) (*mcp.CallToolRe
 		}
 
 		ollamaReq := OllamaRequest{
-			Model:    "deepseek-r1:8b",
+			Model:    "deepseek-r1:1.5b",
 			Messages: ollamaMessages,
 		}
 
