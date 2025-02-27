@@ -7,15 +7,26 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-var DefaultDeepseekClient = sync.OnceValue(func() *openai.Client {
-	apiKey := os.Getenv("DEEPSEEK_API_KEY")
-	if apiKey == "" {
-		panic("DEEPSEEK_API_KEY environment variable must be set")
+var (
+	deepseekClient *openai.Client
+	deepseekOnce   sync.Once
+)
+
+func DefaultDeepseekClient() *openai.Client {
+	// If using Ollama, return nil as we don't need the OpenAI client
+	if os.Getenv("USE_OLLAMA_DEEPSEEK") == "true" {
+		return nil
 	}
 
-	config := openai.DefaultConfig(apiKey)
-	config.BaseURL = "https://api.deepseek.com"
+	deepseekOnce.Do(func() {
+		apiKey := os.Getenv("DEEPSEEK_API_KEY")
+		if apiKey == "" {
+			return
+		}
 
-	client := openai.NewClientWithConfig(config)
-	return client
-})
+		openai.DefaultConfig(apiKey)
+		deepseekClient = openai.NewClient(apiKey)
+	})
+
+	return deepseekClient
+}

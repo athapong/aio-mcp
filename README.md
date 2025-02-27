@@ -29,7 +29,50 @@ npx -y @smithery/cli install @athapong/aio-mcp --client claude
 
 ### Installing via Go
 
-1. Install the server:
+To set the `go install` command to install into the Go bin path, you need to ensure your Go environment variables are correctly configured. Here's how to do it:
+
+1. First, ensure you have a properly set `GOPATH` environment variable, which by default is `$HOME/go` on Unix-like systems or `%USERPROFILE%\go` on Windows.
+
+2. The `go install` command places binaries in `$GOPATH/bin` by default. Make sure this directory is in your system's `PATH` environment variable.
+
+Here's how to set this up on different operating systems:
+
+### Linux/macOS:
+```bash
+# Add these to your ~/.bashrc, ~/.zshrc, or equivalent shell config file
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
+```
+
+After adding these lines, reload your shell configuration:
+```bash
+source ~/.bashrc  # or ~/.zshrc
+```
+
+### Windows (PowerShell):
+```powershell
+# Set environment variables
+[Environment]::SetEnvironmentVariable("GOPATH", "$env:USERPROFILE\go", "User")
+[Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$env:USERPROFILE\go\bin", "User")
+```
+
+### Windows (Command Prompt):
+```cmd
+setx GOPATH "%USERPROFILE%\go"
+setx PATH "%PATH%;%USERPROFILE%\go\bin"
+```
+
+After setting these variables, you can verify they're working correctly with:
+```bash
+go env GOPATH
+echo $PATH  # On Unix/Linux/macOS
+echo %PATH%  # On Windows CMD
+$env:PATH  # On Windows PowerShell
+```
+
+Now when you run `go install`, the binaries will be installed to your `$GOPATH/bin` directory, which is in your PATH, so you can run them from anywhere.
+
+Finally, install the server:
 ```bash
 go install github.com/athapong/aio-mcp@latest
 ```
@@ -53,6 +96,7 @@ QDRANT_PORT=
 GOOGLE_TOKEN_FILE=
 GOOGLE_CREDENTIALS_FILE=
 QDRANT_API_KEY=
+USE_OLLAMA_DEEPSEEK=true/false
 ```
 
 3. Config your claude's config:
@@ -92,6 +136,7 @@ QDRANT_API_KEY=
         "OPENAI_EMBEDDING_MODEL": "",
         "GOOGLE_TOKEN_FILE": "",
         "GOOGLE_CREDENTIALS_FILE": ""
+        "USE_OLLAMA_DEEPSEEK": "true"
       }
     }
 }
@@ -112,7 +157,7 @@ Here is the list of tools group:
 - `gitlab`: GitLab tools
 - `script`: Script tools
 - `rag`: RAG tools
-- `deepseek`: Deepseek AI tools
+- `deepseek`: Deepseek AI tools, including reasoning and advanced search if 'USE_OLLAMA_DEEPSEEK' is set to true, default ollama endpoint is http://localhost:11434 with model deepseek-r1:8b
 
 ## Available Tools
 
