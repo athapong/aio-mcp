@@ -1,9 +1,12 @@
 package tools
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
+	"net/http"
+	"os"
 
 	"github.com/athapong/aio-mcp/services"
 	"github.com/athapong/aio-mcp/util"
@@ -11,6 +14,20 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/sashabaranov/go-openai"
 )
+
+type OllamaRequest struct {
+	Model    string    `json:"model"`
+	Messages []Message `json:"messages"`
+}
+
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type OllamaResponse struct {
+	Message Message `json:"message"`
+}
 
 func RegisterDeepseekTool(s *server.MCPServer) {
 	reasoningTool := mcp.NewTool("deepseek_reasoning",
@@ -24,24 +41,30 @@ func RegisterDeepseekTool(s *server.MCPServer) {
 }
 
 func deepseekReasoningHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
-	question, ok := arguments["question"].(string)
-	if !ok {
-		return mcp.NewToolResultError("question must be a string"), nil
+	systemPrompt, question, _ := buildMessages(arguments)
+
+	// Check if we should use Ollama
+	if useOllama := os.Getenv("USE_OLLAMA_DEEPSEEK"); useOllama == "true" {
+		ollamaMessages := []Message{
+			{
+				Role:    "system",
+				Content: systemPrompt,
+			},
+			{
+				Role:    "user",
+				Content: question,
+			},
+		}
+
+		ollamaReq := OllamaRequest{
+			Model:    "deepseek-r1:1.5b",
+			Messages: ollamaMessages,
+		}
+
+		return callOllamaDeepseek(ollamaReq)
 	}
 
-	contextArgument, ok := arguments["context"].(string)
-	if !ok {
-		contextArgument = ""
-	}
-
-	chatContext, _ := arguments["chat_context"].(string)
-
-	systemPrompt := "Context:\n" + contextArgument
-
-	if chatContext != "" {
-		systemPrompt += "\n\nAdditional Context:\n" + chatContext
-	}
-
+	// Using Deepseek API
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
@@ -53,7 +76,29 @@ func deepseekReasoningHandler(arguments map[string]interface{}) (*mcp.CallToolRe
 		},
 	}
 
-	resp, err := services.DefaultDeepseekClient().CreateChatCompletion(
+	return callDeepseekAPI(messages)
+}
+
+func buildMessages(arguments map[string]interface{}) (string, string, string) {
+	question, _ := arguments["question"].(string)
+	contextArgument, _ := arguments["context"].(string)
+	chatContext, _ := arguments["chat_context"].(string)
+
+	systemPrompt := "Context:\n" + contextArgument
+	if chatContext != "" {
+		systemPrompt += "\n\nAdditional Context:\n" + chatContext
+	}
+
+	return systemPrompt, question, chatContext
+}
+
+func callDeepseekAPI(messages []openai.ChatCompletionMessage) (*mcp.CallToolResult, error) {
+	client := services.DefaultDeepseekClient()
+	if client == nil {
+		return mcp.NewToolResultError("Deepseek client not properly initialized"), nil
+	}
+
+	resp, err := client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model:       "deepseek-reasoner",
@@ -70,8 +115,30 @@ func deepseekReasoningHandler(arguments map[string]interface{}) (*mcp.CallToolRe
 		return mcp.NewToolResultError("no response from Deepseek"), nil
 	}
 
-	var textBuilder strings.Builder
-	textBuilder.WriteString(resp.Choices[0].Message.Content)
+	return mcp.NewToolResultText(resp.Choices[0].Message.Content), nil
+}
 
-	return mcp.NewToolResultText(textBuilder.String()), nil
+func callOllamaDeepseek(req OllamaRequest) (*mcp.CallToolResult, error) {
+	jsonData, err := json.Marshal(req)
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to marshal Ollama request: %s", err)), nil
+	}
+
+	ollamaURL := os.Getenv("OLLAMA_URL")
+	if ollamaURL == "" {
+		ollamaURL = "http://localhost:11434"
+	}
+
+	resp, err := http.Post(ollamaURL+"/api/chat", "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to call Ollama: %s", err)), nil
+	}
+	defer resp.Body.Close()
+
+	var ollamaResp OllamaResponse
+	if err := json.NewDecoder(resp.Body).Decode(&ollamaResp); err != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("failed to decode Ollama response: %s", err)), nil
+	}
+
+	return mcp.NewToolResultText(ollamaResp.Message.Content), nil
 }

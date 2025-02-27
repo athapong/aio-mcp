@@ -29,7 +29,50 @@ npx -y @smithery/cli install @athapong/aio-mcp --client claude
 
 ### Installing via Go
 
-1. Install the server:
+To set the `go install` command to install into the Go bin path, you need to ensure your Go environment variables are correctly configured. Here's how to do it:
+
+1. First, ensure you have a properly set `GOPATH` environment variable, which by default is `$HOME/go` on Unix-like systems or `%USERPROFILE%\go` on Windows.
+
+2. The `go install` command places binaries in `$GOPATH/bin` by default. Make sure this directory is in your system's `PATH` environment variable.
+
+Here's how to set this up on different operating systems:
+
+### Linux/macOS:
+```bash
+# Add these to your ~/.bashrc, ~/.zshrc, or equivalent shell config file
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
+```
+
+After adding these lines, reload your shell configuration:
+```bash
+source ~/.bashrc  # or ~/.zshrc
+```
+
+### Windows (PowerShell):
+```powershell
+# Set environment variables
+[Environment]::SetEnvironmentVariable("GOPATH", "$env:USERPROFILE\go", "User")
+[Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$env:USERPROFILE\go\bin", "User")
+```
+
+### Windows (Command Prompt):
+```cmd
+setx GOPATH "%USERPROFILE%\go"
+setx PATH "%PATH%;%USERPROFILE%\go\bin"
+```
+
+After setting these variables, you can verify they're working correctly with:
+```bash
+go env GOPATH
+echo $PATH  # On Unix/Linux/macOS
+echo %PATH%  # On Windows CMD
+$env:PATH  # On Windows PowerShell
+```
+
+Now when you run `go install`, the binaries will be installed to your `$GOPATH/bin` directory, which is in your PATH, so you can run them from anywhere.
+
+Finally, install the server:
 ```bash
 go install github.com/athapong/aio-mcp@latest
 ```
@@ -53,6 +96,7 @@ QDRANT_PORT=
 GOOGLE_TOKEN_FILE=
 GOOGLE_CREDENTIALS_FILE=
 QDRANT_API_KEY=
+USE_OLLAMA_DEEPSEEK=
 ```
 
 3. Config your claude's config:
@@ -75,25 +119,34 @@ QDRANT_API_KEY=
     "aio-mcp": {
       "command": "aio-mcp",
       "env": {
-        "ENABLE_TOOLS": "jira,confluence,youtube,fetch,gitlab,script,rag,openai_compatible",
-        "QDRANT_HOST": "",
-        "QDRANT_PORT": "",
-        "QDRANT_API_KEY": "",
-        "ATLASSIAN_HOST": "",
-        "ATLASSIAN_EMAIL": "",
-        "ATLASSIAN_TOKEN": "",
-        "GITLAB_HOST": "https://gitlab.com",
-        "GITLAB_TOKEN": "",
-        "BRAVE_API_KEY": "",
+        "ENABLE_TOOLS": "",
+        "OPENAI_BASE_URL": "",
         "GOOGLE_AI_API_KEY": "",
+        "GITLAB_TOKEN": "",
+        "GITLAB_HOST": "",
+        "QDRANT_HOST": "",
+        "QDRANT_API_KEY": "",
+        
         "PROXY_URL": "",
         "OPENAI_API_KEY": "",
-        "OPENAI_BASE_URL": "",
-        "OPENAI_EMBEDDING_MODEL": "",
         "GOOGLE_TOKEN_FILE": "",
-        "GOOGLE_CREDENTIALS_FILE": ""
+        "GOOGLE_CREDENTIALS_FILE": "",
+        
+        "ATLASSIAN_TOKEN": "",
+        "BRAVE_API_KEY": "",
+        "QDRANT_PORT": "",
+        "ATLASSIAN_HOST": "",
+        "ATLASSIAN_EMAIL": "",
+
+        "USE_OPENROUTER": "", // "true" if you want to use openrouter for AI to help with reasoning on `tool_use_plan`, default is false
+        "DEEPSEEK_API_KEY": "", // specify the deepseek api key if you want to use deepseek for AI to help with reasoning on `tool_use_plan`
+        "OPENROUTER_API_KEY": "", // specify the openrouter api key if you want to use openrouter for AI to help with reasoning on `tool_use_plan`
+        "DEEPSEEK_API_BASE": "", // specify the deepseek api key if you want to use deepseek for AI to help with reasoning on `tool_use_plan`
+        "USE_OLLAMA_DEEPSEEK": "", // "true" if you want to use deepseek with local ollama, default is false
+        "OLLAMA_URL": "" // default with http://localhost:11434
       }
     }
+  }
 }
 ```
 
@@ -112,7 +165,7 @@ Here is the list of tools group:
 - `gitlab`: GitLab tools
 - `script`: Script tools
 - `rag`: RAG tools
-- `deepseek`: Deepseek AI tools
+- `deepseek`: Deepseek AI tools, including reasoning and advanced search if 'USE_OLLAMA_DEEPSEEK' is set to true, default ollama endpoint is http://localhost:11434 with model deepseek-r1:8b
 
 ## Available Tools
 
@@ -361,6 +414,15 @@ Arguments:
 - `target_branch` (String) (Required): Target branch name
 - `title` (String) (Required): Merge request title
 - `description` (String): Merge request description
+
+### gitlab_clone_repo
+
+Clone or update a GitLab repository locally
+
+Arguments:
+
+- `project_path` (String) (Required): Project/repo path
+- `ref` (String): Branch name or tag (optional, defaults to project's default branch)
 
 ### gmail_search
 
@@ -629,6 +691,16 @@ Arguments:
 - `branchFromThought` (Number): Branching point thought number
 - `branchId` (String): Branch identifier
 - `needsMoreThoughts` (Boolean): If more thoughts are needed
+- `result` (String): Final result or conclusion from this thought
+- `summary` (String): Brief summary of the thought's key points
+
+### sequentialthinking_history
+
+Retrieve the thought history for the current thinking process
+
+Arguments:
+
+- `branchId` (String): Optional branch ID to get history for
 
 ### tool_manager
 
@@ -641,12 +713,12 @@ Arguments:
 
 ### tool_use_plan
 
-Tạo kế hoạch sử dụng các công cụ đang kích hoạt để giải quyết yêu cầu
+Create a plan using available tools to solve the request
 
 Arguments:
 
-- `request` (String) (Required): Yêu cầu cần lập kế hoạch
-- `context` (String) (Required): Ngữ cảnh liên quan đến yêu cầu
+- `request` (String) (Required): Request to plan for
+- `context` (String) (Required): Context related to the request
 
 ### youtube_transcript
 
