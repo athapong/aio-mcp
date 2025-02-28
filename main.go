@@ -61,6 +61,7 @@ func main() {
 
 	if isEnabled("jira") {
 		tools.RegisterJiraTool(mcpServer)
+		resources.RegisterJiraResource(mcpServer)
 	}
 
 	if isEnabled("gitlab") {
@@ -98,7 +99,9 @@ func main() {
 
 	prompts.RegisterCodeTools(mcpServer)
 
-	resources.RegisterJiraResource(mcpServer)
+	if isEnabled("google_maps") {
+		tools.RegisterGoogleMapTools(mcpServer)
+	}
 
 	if err := server.ServeStdio(mcpServer); err != nil {
 		panic(fmt.Sprintf("Server error: %v", err))

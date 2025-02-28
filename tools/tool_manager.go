@@ -63,6 +63,9 @@ func toolManagerHandler(arguments map[string]interface{}) (*mcp.CallToolResult, 
 			{"youtube_channel", "YouTube channel tools"},
 			{"sequential_thinking", "Sequential thinking tool"},
 			{"deepseek", "Deepseek reasoning tool"},
+			{"maps_location_search", "Google Maps location search"},
+			{"maps_geocoding", "Google Maps geocoding and reverse geocoding"},
+			{"maps_place_details", "Google Maps detailed place information"},
 		}
 
 		for _, t := range tools {
