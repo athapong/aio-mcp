@@ -97,6 +97,8 @@ func main() {
 		tools.RegisterGChatTool(mcpServer)
 	}
 
+	tools.RegisterScreenshotTool(mcpServer)
+
 	prompts.RegisterCodeTools(mcpServer)
 
 	if isEnabled("google_maps") {
