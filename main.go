@@ -51,6 +51,10 @@ func main() {
 		tools.RegisterFetchTool(mcpServer)
 	}
 
+	if isEnabled("brave_search") {
+		tools.RegisterWebSearchTool(mcpServer)
+	}
+
 	if isEnabled("confluence") {
 		tools.RegisterConfluenceTool(mcpServer)
 	}

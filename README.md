@@ -1,14 +1,7 @@
-# MyMCP Server
+# AIO-MCP Server
 
 [![smithery badge](https://smithery.ai/badge/@athapong/aio-mcp)](https://smithery.ai/server/@athapong/aio-mcp)
 A powerful Model Context Protocol (MCP) server implementation with integrations for GitLab, Jira, Confluence, YouTube, and more. This server provides AI-powered search capabilities and various utility tools for development workflows.
-
-[Tutorial](https://www.youtube.com/watch?v=XnDFtYKU6xU)
-
-## Community
-
-For community support, discussions, and updates, please visit our forum at [community.aiocean.io](https://community.aiocean.io/).
-
 
 ## Prerequisites
 
@@ -104,7 +97,7 @@ USE_OLLAMA_DEEPSEEK=
 ```json{claude_desktop_config.json}
 {
   "mcpServers": {
-    "my_mcp_server": {
+    "aio-mcp": {
       "command": "aio-mcp",
       "args": ["-env", "/path/to/.env"],
       
@@ -159,6 +152,8 @@ Here is the list of tools group:
 
 - `gemini`: Gemini-powered search
 - `fetch`: Fetch tools
+- `brave_search`: Brave Search tools
+- `google_maps`: Google Maps tools
 - `confluence`: Confluence tools
 - `youtube`: YouTube tools
 - `jira`: Jira tools
