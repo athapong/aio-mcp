@@ -478,8 +478,28 @@ func vectorSearchHandler(arguments map[string]interface{}) (*mcp.CallToolResult,
 		content := hit.Payload["content"].GetStringValue()
 		filePath := hit.Payload["filePath"].GetStringValue()
 		usedModel := hit.Payload["model"].GetStringValue()
-		resultText += fmt.Sprintf("Result %d (Score: %.4f):\nModel: %s\nFilePath: %s\nContent: %s\n\n",
-			i+1, hit.Score, usedModel, filePath, content)
+
+		// Extract additional payload fields if they exist
+		component := hit.Payload["component"].GetStringValue()
+		status := hit.Payload["status"].GetStringValue()
+		testID := hit.Payload["test_id"].GetStringValue()
+		priority := hit.Payload["priority"].GetStringValue()
+		subfeature := hit.Payload["subfeature"].GetStringValue()
+		feature := hit.Payload["feature"].GetStringValue()
+
+		resultText += fmt.Sprintf("Result %d (Score: %.4f):\n"+
+			"Model: %s\n"+
+			"FilePath: %s\n"+
+			"Component: %s\n"+
+			"Status: %s\n"+
+			"Test ID: %s\n"+
+			"Priority: %s\n"+
+			"Feature: %s\n"+
+			"Subfeature: %s\n"+
+			"Content: %s\n\n",
+			i+1, hit.Score, usedModel, filePath,
+			component, status, testID, priority,
+			feature, subfeature, content)
 	}
 
 	return mcp.NewToolResultText(resultText), nil
