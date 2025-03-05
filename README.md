@@ -12,7 +12,7 @@ A powerful Model Context Protocol (MCP) server implementation with integrations 
 
 ### Installing via Smithery
 
-To install MyMCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@athapong/aio-mcp) (will guide you through interactive CLI setup):
+To install AIO-MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@athapong/aio-mcp) (will guide you through interactive CLI setup):
 
 ```bash
 npx -y @smithery/cli install @athapong/aio-mcp --client claude
@@ -751,4 +751,3 @@ Arguments:
 
 - `channel_id` (String) (Required): ID of the channel to list videos for
 - `max_results` (Number) (Required): Maximum number of videos to return
-
