@@ -59,7 +59,29 @@ startCommand:
       qdrantApiKey:
         type: string
         description: API key for Qdrant
+      openaiBaseUrl:
+      type: string
+      description: Base URL for OpenAI API
+    openaiEmbeddingModel:
+      type: string
+      description: Model name for OpenAI embeddings
+    googleMapsApiKey:
+      type: string
+      description: API key for Google Maps
+    deepseekApiKey:
+      type: string
+      description: API key for Deepseek
+    useOllamaDeepseek:
+      type: string
+      description: Flag to use Ollama Deepseek
+    useOpenrouter:
+      type: string
+      description: Flag to use OpenRouter
+    openrouterApiKey:
+      type: string
+      description: API key for OpenRouter  
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({ command: './all-in-one-model-context-protocol', args: ['-env', '/path/to/.env'], env: { ENABLE_TOOLS: config.enableTools, QDRANT_HOST: config.qdrantHost, ATLASSIAN_HOST: config.atlassianHost, ATLASSIAN_EMAIL: config.atlassianEmail, GITLAB_HOST: config.gitlabHost, GITLAB_TOKEN: config.gitlabToken, BRAVE_API_KEY: config.braveApiKey, ATLASSIAN_TOKEN: config.atlassianToken, GOOGLE_AI_API_KEY: config.googleAiApiKey, PROXY_URL: config.proxyUrl, OPENAI_API_KEY: config.openaiApiKey, QDRANT_PORT: config.qdrantPort, GOOGLE_TOKEN_FILE: config.googleTokenFile, GOOGLE_CREDENTIALS_FILE: config.googleCredentialsFile, QDRANT_API_KEY: config.qdrantApiKey } })
+    (config) => ({ command: './all-in-one-model-context-protocol', args: ['-env', '/path/to/.env'], env: { ENABLE_TOOLS: config.enableTools, QDRANT_HOST: config.qdrantHost, QDRANT_PORT: config.qdrantPort, QDRANT_API_KEY: config.qdrantApiKey, ATLASSIAN_HOST: config.atlassianHost, ATLASSIAN_EMAIL: config.atlassianEmail, ATLASSIAN_TOKEN: config.atlassianToken, GITLAB_HOST: config.gitlabHost, GITLAB_TOKEN: config.gitlabToken, BRAVE_API_KEY: config.braveApiKey, GOOGLE_AI_API_KEY: config.googleAiApiKey, PROXY_URL: config.proxyUrl, OPENAI_API_KEY: config.openaiApiKey, OPENAI_BASE_URL: config.openaiBaseUrl, OPENAI_EMBEDDING_MODEL: config.openaiEmbeddingModel, GOOGLE_TOKEN_FILE: config.googleTokenFile, GOOGLE_CREDENTIALS_FILE: config.googleCredentialsFile, GOOGLE_MAPS_API_KEY: config.googleMapsApiKey, DEEPSEEK_API_KEY: config.deepseekApiKey, USE_OLLAMA_DEEPSEEK: config.useOllamaDeepseek, USE_OPENROUTER: config.useOpenrouter, OPENROUTER_API_KEY: config.openrouterApiKey } })
+    
