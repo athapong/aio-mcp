@@ -60,26 +60,26 @@ startCommand:
         type: string
         description: API key for Qdrant
       openaiBaseUrl:
-      type: string
-      description: Base URL for OpenAI API
-    openaiEmbeddingModel:
-      type: string
-      description: Model name for OpenAI embeddings
-    googleMapsApiKey:
-      type: string
-      description: API key for Google Maps
-    deepseekApiKey:
-      type: string
-      description: API key for Deepseek
-    useOllamaDeepseek:
-      type: string
-      description: Flag to use Ollama Deepseek
-    useOpenrouter:
-      type: string
-      description: Flag to use OpenRouter
-    openrouterApiKey:
-      type: string
-      description: API key for OpenRouter  
+        type: string
+        description: Base URL for OpenAI API
+      openaiEmbeddingModel:
+        type: string
+        description: Model name for OpenAI embeddings
+      googleMapsApiKey:
+        type: string
+        description: API key for Google Maps
+      deepseekApiKey:
+        type: string
+        description: API key for Deepseek
+      useOllamaDeepseek:
+        type: string
+        description: Flag to use Ollama Deepseek
+      useOpenrouter:
+        type: string
+        description: Flag to use OpenRouter
+      openrouterApiKey:
+        type: string
+        description: API key for OpenRouter  
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
