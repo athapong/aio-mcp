@@ -258,6 +258,38 @@ func jiraSearchHandler(arguments map[string]interface{}) (*mcp.CallToolResult, e
 	return mcp.NewToolResultText(sb.String()), nil
 }
 
+// Add a helper function to format custom field values
+func formatCustomFieldValue(fieldName string, value interface{}) string {
+	if value == nil {
+		return "None"
+	}
+	if m, ok := value.(map[string]interface{}); ok {
+		if dn, exists := m["displayName"]; exists {
+			return fmt.Sprintf("%v", dn)
+		}
+		if dn, exists := m["value"]; exists {
+			return fmt.Sprintf("%v", dn)
+		}
+		if dn, exists := m["name"]; exists {
+			return fmt.Sprintf("%v", dn)
+		}
+	}
+	switch v := value.(type) {
+	case string:
+		return v
+	case float64:
+		return fmt.Sprintf("%.2f", v)
+	case []interface{}:
+		var parts []string
+		for _, item := range v {
+			parts = append(parts, fmt.Sprintf("%v", item))
+		}
+		return strings.Join(parts, ", ")
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 func jiraIssueHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
 	client := services.JiraClient()
 
@@ -361,7 +393,8 @@ func jiraIssueHandler(arguments map[string]interface{}) (*mcp.CallToolResult, er
 	for _, fieldDef := range fieldsDef {
 		if fieldDef.Custom && desiredCustom[fieldDef.Name] {
 			if value, exists := fieldsData[fieldDef.ID]; exists {
-				filteredCustomFields.WriteString(fmt.Sprintf("%s: %v\n", fieldDef.Name, value))
+				formatted := formatCustomFieldValue(fieldDef.Name, value)
+				filteredCustomFields.WriteString(fmt.Sprintf("%s: %s\n", fieldDef.Name, formatted))
 			}
 		}
 	}
