@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"encoding/json" // added for unmarshalling raw issue
 	"fmt"
 	"strconv"
 	"strings"
@@ -257,6 +258,38 @@ func jiraSearchHandler(arguments map[string]interface{}) (*mcp.CallToolResult, e
 	return mcp.NewToolResultText(sb.String()), nil
 }
 
+// Add a helper function to format custom field values
+func formatCustomFieldValue(fieldName string, value interface{}) string {
+	if value == nil {
+		return "None"
+	}
+	if m, ok := value.(map[string]interface{}); ok {
+		if dn, exists := m["displayName"]; exists {
+			return fmt.Sprintf("%v", dn)
+		}
+		if dn, exists := m["value"]; exists {
+			return fmt.Sprintf("%v", dn)
+		}
+		if dn, exists := m["name"]; exists {
+			return fmt.Sprintf("%v", dn)
+		}
+	}
+	switch v := value.(type) {
+	case string:
+		return v
+	case float64:
+		return fmt.Sprintf("%.2f", v)
+	case []interface{}:
+		var parts []string
+		for _, item := range v {
+			parts = append(parts, fmt.Sprintf("%v", item))
+		}
+		return strings.Join(parts, ", ")
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 func jiraIssueHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
 	client := services.JiraClient()
 
@@ -269,7 +302,8 @@ func jiraIssueHandler(arguments map[string]interface{}) (*mcp.CallToolResult, er
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
-	issue, response, err := client.Issue.Get(ctx, issueKey, nil, []string{"transitions"})
+	// Request all fields including custom fields
+	issue, response, err := client.Issue.Get(ctx, issueKey, []string{"*all"}, []string{"transitions"})
 	if err != nil {
 		if response != nil {
 			return nil, fmt.Errorf("failed to get issue: %s (endpoint: %s)", response.Bytes.String(), response.Endpoint)
@@ -292,22 +326,77 @@ func jiraIssueHandler(arguments map[string]interface{}) (*mcp.CallToolResult, er
 		transitions += fmt.Sprintf("- %s (ID: %s)\n", transition.Name, transition.ID)
 	}
 
-	// Get reporter name, handling nil case
+	// Get reporter, assignee, and priority names with nil checks
 	reporterName := "Unassigned"
 	if issue.Fields.Reporter != nil {
 		reporterName = issue.Fields.Reporter.DisplayName
 	}
 
-	// Get assignee name, handling nil case
 	assigneeName := "Unassigned"
 	if issue.Fields.Assignee != nil {
 		assigneeName = issue.Fields.Assignee.DisplayName
 	}
 
-	// Get priority name, handling nil case
 	priorityName := "None"
 	if issue.Fields.Priority != nil {
 		priorityName = issue.Fields.Priority.Name
+	}
+
+	// Extract custom fields by unmarshalling the raw JSON response
+	var rawIssue map[string]interface{}
+	err = json.Unmarshal([]byte(response.Bytes.String()), &rawIssue)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal raw issue: %v", err)
+	}
+	fieldsData, ok := rawIssue["fields"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("raw issue fields not found")
+	}
+
+	// Retrieve field definitions for mapping custom field IDs to friendly names
+	fieldsDef, resp2, err2 := client.Issue.Field.Gets(ctx)
+	if err2 != nil {
+		if resp2 != nil {
+			return nil, fmt.Errorf("failed to get field definitions: %s (endpoint: %s)", resp2.Bytes.String(), resp2.Endpoint)
+		}
+		return nil, fmt.Errorf("failed to get field definitions: %v", err2)
+	}
+	// Define the custom field names to display
+	desiredCustom := map[string]bool{
+		"Development":          true,
+		"Create branch":        true,
+		"Create commit":        true,
+		"Releases":             true,
+		"Add feature flag":     true,
+		"Labels":               true,
+		"Squad":                true,
+		"Story/Bug Type":       true,
+		"Deployment Object ID": true,
+		"Est. QA Effort":       true,
+		"BE Story point":       true,
+		"FE Story point":       true,
+		"QA Story point":       true,
+		"Developer":            true,
+		"QA":                   true,
+		"Story Points":         true,
+		"Parent":               true,
+		"Sprint":               true,
+		"Fix versions":         true,
+		"Original estimate":    true,
+		"Time tracking":        true,
+		"Components":           true,
+		"Due date":             true,
+	}
+
+	var filteredCustomFields strings.Builder
+	filteredCustomFields.WriteString("\nFiltered Custom Fields:\n")
+	for _, fieldDef := range fieldsDef {
+		if fieldDef.Custom && desiredCustom[fieldDef.Name] {
+			if value, exists := fieldsData[fieldDef.ID]; exists {
+				formatted := formatCustomFieldValue(fieldDef.Name, value)
+				filteredCustomFields.WriteString(fmt.Sprintf("%s: %s\n", fieldDef.Name, formatted))
+			}
+		}
 	}
 
 	result := fmt.Sprintf(`
@@ -333,7 +422,7 @@ Available Transitions:
 		issue.Fields.Updated,
 		priorityName,
 		issue.Fields.Description,
-		subtasks,
+		subtasks+filteredCustomFields.String(),
 		transitions,
 	)
 
