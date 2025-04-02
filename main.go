@@ -19,10 +19,11 @@ func main() {
 	flag.Parse()
 
 	if err := godotenv.Load(*envFile); err != nil {
-		fmt.Printf("Warning: Error loading env file %s: %v\n", *envFile, err)
+		// do nothing
 	}
+
 	mcpServer := server.NewMCPServer(
-		"MyMCP",
+		"All-In-One MCP",
 		"1.0.0",
 		server.WithLogging(),
 		server.WithPromptCapabilities(true),
