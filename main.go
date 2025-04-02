@@ -19,18 +19,18 @@ func main() {
 	flag.Parse()
 
 	if err := godotenv.Load(*envFile); err != nil {
-		fmt.Printf("Warning: Error loading env file %s: %v\n", *envFile, err)
+		// do nothing
 	}
+
 	mcpServer := server.NewMCPServer(
-		"MyMCP",
+		"All-In-One MCP",
 		"1.0.0",
 		server.WithLogging(),
 		server.WithPromptCapabilities(true),
 		server.WithResourceCapabilities(true, true),
 	)
 
-	// Đăng ký tool manager với envFile từ flag
-	tools.RegisterToolManagerTool(mcpServer, *envFile)
+	tools.RegisterToolManagerTool(mcpServer)
 
 	enableTools := strings.Split(os.Getenv("ENABLE_TOOLS"), ",")
 	allToolsEnabled := len(enableTools) == 1 && enableTools[0] == ""
