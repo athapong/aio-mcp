@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -201,15 +202,16 @@ func RegisterGitLabTool(s *server.MCPServer) {
 	s.AddTool(mrCommentTool, util.ErrorGuard(commentOnMergeRequestHandler))
 	s.AddTool(fileContentTool, util.ErrorGuard(getFileContentHandler))
 	s.AddTool(pipelineTool, util.ErrorGuard(listPipelinesHandler))
-	s.AddTool(commitsTool, util.ErrorGuard(listCommitsHandler))
-	s.AddTool(commitDetailsTool, util.ErrorGuard(getCommitDetailsHandler))
-	s.AddTool(userEventsTool, util.ErrorGuard(listUserEventsHandler))
-	s.AddTool(listGroupUsersTool, util.ErrorGuard(listGroupUsersHandler))
-	s.AddTool(createMRTool, util.ErrorGuard(createMergeRequestHandler))
-	s.AddTool(cloneRepoTool, util.ErrorGuard(cloneRepoHandler))
+	s.AddTool(commitsTool, util.ErrorGuard(util.AdaptLegacyHandler(listCommitsHandler)))
+	s.AddTool(commitDetailsTool, util.ErrorGuard(util.AdaptLegacyHandler(getCommitDetailsHandler)))
+	s.AddTool(userEventsTool, util.ErrorGuard(util.AdaptLegacyHandler(listUserEventsHandler)))
+	s.AddTool(listGroupUsersTool, util.ErrorGuard(util.AdaptLegacyHandler(listGroupUsersHandler)))
+	s.AddTool(createMRTool, util.ErrorGuard(util.AdaptLegacyHandler(createMergeRequestHandler)))
+	s.AddTool(cloneRepoTool, util.ErrorGuard(util.AdaptLegacyHandler(cloneRepoHandler)))
 }
 
-func listProjectsHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func listProjectsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	groupID := arguments["group_id"].(string)
 
 	opt := &gitlab.ListGroupProjectsOptions{
@@ -239,7 +241,8 @@ func listProjectsHandler(arguments map[string]interface{}) (*mcp.CallToolResult,
 	return mcp.NewToolResultText(result), nil
 }
 
-func getProjectHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func getProjectHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	projectID := arguments["project_path"].(string)
 
 	// Get project details
@@ -280,7 +283,8 @@ func getProjectHandler(arguments map[string]interface{}) (*mcp.CallToolResult, e
 	return mcp.NewToolResultText(result), nil
 }
 
-func listMergeRequestsHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func listMergeRequestsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	projectID := arguments["project_path"].(string)
 
 	state := "all"
@@ -352,7 +356,8 @@ func listMergeRequestsHandler(arguments map[string]interface{}) (*mcp.CallToolRe
 	return mcp.NewToolResultText(result.String()), nil
 }
 
-func getMergeRequestHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func getMergeRequestHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	projectID := arguments["project_path"].(string)
 	mrIIDStr := arguments["mr_iid"].(string)
 
@@ -424,7 +429,8 @@ func getMergeRequestHandler(arguments map[string]interface{}) (*mcp.CallToolResu
 	return mcp.NewToolResultText(result.String()), nil
 }
 
-func commentOnMergeRequestHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func commentOnMergeRequestHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	projectID := arguments["project_path"].(string)
 	mrIIDStr := arguments["mr_iid"].(string)
 	comment := arguments["comment"].(string)
@@ -450,7 +456,8 @@ func commentOnMergeRequestHandler(arguments map[string]interface{}) (*mcp.CallTo
 }
 
 // Modify getFileContentHandler to use the same ref handling
-func getFileContentHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func getFileContentHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	projectPath := arguments["project_path"].(string)
 	filePath := arguments["file_path"].(string)
 	ref := ""
@@ -480,7 +487,8 @@ func getFileContentHandler(arguments map[string]interface{}) (*mcp.CallToolResul
 	return mcp.NewToolResultText(result.String()), nil
 }
 
-func listPipelinesHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func listPipelinesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	projectID := arguments["project_path"].(string)
 	status := arguments["status"].(string)
 

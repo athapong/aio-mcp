@@ -43,7 +43,8 @@ var genAiClient = sync.OnceValue(func() *genai.Client {
 	return client
 })
 
-func aiWebSearchHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func aiWebSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	question, ok := arguments["question"].(string)
 	if !ok {
 		return mcp.NewToolResultError("question must be a string"), nil
@@ -56,7 +57,7 @@ func aiWebSearchHandler(arguments map[string]interface{}) (*mcp.CallToolResult, 
 		systemInstruction += "\n\nContext: " + questionContext
 	}
 
-	resp, err := genAiClient().Models.GenerateContent(context.Background(),
+	resp, err := genAiClient().Models.GenerateContent(ctx,
 		"gemini-2.0-pro-exp-02-05", //gemini-2.0-flash
 		genai.PartSlice{
 			genai.Text(question),

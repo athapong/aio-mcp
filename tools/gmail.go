@@ -22,14 +22,14 @@ func RegisterGmailTools(s *server.MCPServer) {
 		mcp.WithDescription("Search emails in Gmail using Gmail's search syntax"),
 		mcp.WithString("query", mcp.Required(), mcp.Description("Gmail search query. Follow Gmail's search syntax")),
 	)
-	s.AddTool(searchTool, util.ErrorGuard(gmailSearchHandler))
+	s.AddTool(searchTool, util.ErrorGuard(util.AdaptLegacyHandler(gmailSearchHandler)))
 
 	// Move to spam tool
 	spamTool := mcp.NewTool("gmail_move_to_spam",
 		mcp.WithDescription("Move specific emails to spam folder in Gmail by message IDs"),
 		mcp.WithString("message_ids", mcp.Required(), mcp.Description("Comma-separated list of message IDs to move to spam")),
 	)
-	s.AddTool(spamTool, util.ErrorGuard(gmailMoveToSpamHandler))
+	s.AddTool(spamTool, util.ErrorGuard(util.AdaptLegacyHandler(gmailMoveToSpamHandler)))
 
 	// Add create filter tool
 	createFilterTool := mcp.NewTool("gmail_create_filter",
@@ -44,33 +44,33 @@ func RegisterGmailTools(s *server.MCPServer) {
 		mcp.WithBoolean("mark_read", mcp.Description("Mark matching messages as read")),
 		mcp.WithBoolean("archive", mcp.Description("Archive matching messages")),
 	)
-	s.AddTool(createFilterTool, util.ErrorGuard(gmailCreateFilterHandler))
+	s.AddTool(createFilterTool, util.ErrorGuard(util.AdaptLegacyHandler(gmailCreateFilterHandler)))
 
 	// List filters tool
 	listFiltersTool := mcp.NewTool("gmail_list_filters",
 		mcp.WithDescription("List all Gmail filters in the account"),
 	)
-	s.AddTool(listFiltersTool, util.ErrorGuard(gmailListFiltersHandler))
+	s.AddTool(listFiltersTool, util.ErrorGuard(util.AdaptLegacyHandler(gmailListFiltersHandler)))
 
 	// List labels tool
 	listLabelsTool := mcp.NewTool("gmail_list_labels",
 		mcp.WithDescription("List all Gmail labels in the account"),
 	)
-	s.AddTool(listLabelsTool, util.ErrorGuard(gmailListLabelsHandler))
+	s.AddTool(listLabelsTool, util.ErrorGuard(util.AdaptLegacyHandler(gmailListLabelsHandler)))
 
 	// Add delete filter tool
 	deleteFilterTool := mcp.NewTool("gmail_delete_filter",
 		mcp.WithDescription("Delete a Gmail filter by its ID"),
 		mcp.WithString("filter_id", mcp.Required(), mcp.Description("The ID of the filter to delete")),
 	)
-	s.AddTool(deleteFilterTool, util.ErrorGuard(gmailDeleteFilterHandler))
+	s.AddTool(deleteFilterTool, util.ErrorGuard(util.AdaptLegacyHandler(gmailDeleteFilterHandler)))
 
 	// Add delete label tool
 	deleteLabelTool := mcp.NewTool("gmail_delete_label",
 		mcp.WithDescription("Delete a Gmail label by its ID"),
 		mcp.WithString("label_id", mcp.Required(), mcp.Description("The ID of the label to delete")),
 	)
-	s.AddTool(deleteLabelTool, util.ErrorGuard(gmailDeleteLabelHandler))
+	s.AddTool(deleteLabelTool, util.ErrorGuard(util.AdaptLegacyHandler(gmailDeleteLabelHandler)))
 }
 
 var gmailService = sync.OnceValue(func() *gmail.Service {

@@ -21,7 +21,7 @@ func RegisterGoogleMapTools(s *server.MCPServer) {
 		mcp.WithString("query", mcp.Required(), mcp.Description("Location to search for")),
 		mcp.WithNumber("limit", mcp.Description("Maximum number of results to return (default: 5)")),
 	)
-	s.AddTool(locationSearchTool, util.ErrorGuard(locationSearchHandler))
+	s.AddTool(locationSearchTool, util.ErrorGuard(util.AdaptLegacyHandler(locationSearchHandler)))
 
 	// Geocoding tool
 	geocodingTool := mcp.NewTool("maps_geocoding",
@@ -30,14 +30,14 @@ func RegisterGoogleMapTools(s *server.MCPServer) {
 		mcp.WithNumber("lat", mcp.Description("Latitude for reverse geocoding (required with lng if not using address)")),
 		mcp.WithNumber("lng", mcp.Description("Longitude for reverse geocoding (required with lat if not using address)")),
 	)
-	s.AddTool(geocodingTool, util.ErrorGuard(geocodingHandler))
+	s.AddTool(geocodingTool, util.ErrorGuard(util.AdaptLegacyHandler(geocodingHandler)))
 
 	// Place details tool
 	placeDetailsTool := mcp.NewTool("maps_place_details",
 		mcp.WithDescription("Get detailed information about a specific place"),
 		mcp.WithString("place_id", mcp.Required(), mcp.Description("Google Maps place ID")),
 	)
-	s.AddTool(placeDetailsTool, util.ErrorGuard(placeDetailsHandler))
+	s.AddTool(placeDetailsTool, util.ErrorGuard(util.AdaptLegacyHandler(placeDetailsHandler)))
 
 	// Directions tool
 	directionsTool := mcp.NewTool("maps_directions",
@@ -48,7 +48,7 @@ func RegisterGoogleMapTools(s *server.MCPServer) {
 		mcp.WithString("waypoints", mcp.Description("Optional waypoints separated by '|' (e.g. 'place_id:ChIJ...|place_id:ChIJ...')")),
 		mcp.WithBoolean("alternatives", mcp.Description("Return alternative routes if available")),
 	)
-	s.AddTool(directionsTool, util.ErrorGuard(directionsHandler))
+	s.AddTool(directionsTool, util.ErrorGuard(util.AdaptLegacyHandler(directionsHandler)))
 }
 
 // getGoogleMapsClient creates and returns a Google Maps client
@@ -118,14 +118,7 @@ func locationSearchHandler(arguments map[string]interface{}) (*mcp.CallToolResul
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}
 
-	return &mcp.CallToolResult{
-		Content: []interface{}{
-			mcp.TextContent{
-				Type: "text",
-				Text: string(jsonData),
-			},
-		},
-	}, nil
+	return mcp.NewToolResultText(string(jsonData)), nil
 }
 
 // geocodingHandler handles geocoding and reverse geocoding requests
@@ -187,14 +180,7 @@ func handleGeocoding(client *maps.Client, address string) (*mcp.CallToolResult, 
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}
 
-	return &mcp.CallToolResult{
-		Content: []interface{}{
-			mcp.TextContent{
-				Type: "text",
-				Text: string(jsonData),
-			},
-		},
-	}, nil
+	return mcp.NewToolResultText(string(jsonData)), nil
 }
 
 // handleReverseGeocoding processes coordinates to get an address
@@ -232,14 +218,7 @@ func handleReverseGeocoding(client *maps.Client, lat, lng float64) (*mcp.CallToo
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}
 
-	return &mcp.CallToolResult{
-		Content: []interface{}{
-			mcp.TextContent{
-				Type: "text",
-				Text: string(jsonData),
-			},
-		},
-	}, nil
+	return mcp.NewToolResultText(string(jsonData)), nil
 }
 
 // placeDetailsHandler handles requests for detailed place information
@@ -300,14 +279,7 @@ func placeDetailsHandler(arguments map[string]interface{}) (*mcp.CallToolResult,
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}
 
-	return &mcp.CallToolResult{
-		Content: []interface{}{
-			mcp.TextContent{
-				Type: "text",
-				Text: string(jsonData),
-			},
-		},
-	}, nil
+	return mcp.NewToolResultText(string(jsonData)), nil
 }
 
 // directionsHandler handles requests for directions between two locations
@@ -440,12 +412,5 @@ func directionsHandler(arguments map[string]interface{}) (*mcp.CallToolResult, e
 		return mcp.NewToolResultError(fmt.Sprintf("Failed to marshal JSON: %v", err)), nil
 	}
 
-	return &mcp.CallToolResult{
-		Content: []interface{}{
-			mcp.TextContent{
-				Type: "text",
-				Text: string(jsonData),
-			},
-		},
-	}, nil
+	return mcp.NewToolResultText(string(jsonData)), nil
 }

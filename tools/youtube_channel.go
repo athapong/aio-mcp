@@ -25,13 +25,13 @@ func RegisterYouTubeChannelTools(s *server.MCPServer) {
 		mcp.WithString("keywords", mcp.Required(), mcp.Description("Comma-separated list of keywords for the video")),
 		mcp.WithString("category", mcp.Required(), mcp.Description("Category ID for the video. See https://developers.google.com/youtube/v3/docs/videoCategories/list for more information.")),
 	)
-	s.AddTool(updateVideoTool, util.ErrorGuard(youtubeUpdateVideoHandler))
+	s.AddTool(updateVideoTool, util.ErrorGuard(util.AdaptLegacyHandler(youtubeUpdateVideoHandler)))
 
 	getVideoDetailsTool := mcp.NewTool("youtube_get_video_details",
 		mcp.WithDescription("Get details (title, description, ...) for a specific video"),
 		mcp.WithString("video_id", mcp.Required(), mcp.Description("ID of the video")),
 	)
-	s.AddTool(getVideoDetailsTool, util.ErrorGuard(youtubeGetVideoDetailsHandler))
+	s.AddTool(getVideoDetailsTool, util.ErrorGuard(util.AdaptLegacyHandler(youtubeGetVideoDetailsHandler)))
 
 	// List my channels tool
 	listMyChannelsTool := mcp.NewTool("youtube_list_videos",
@@ -39,7 +39,7 @@ func RegisterYouTubeChannelTools(s *server.MCPServer) {
 		mcp.WithString("channel_id", mcp.Required(), mcp.Description("ID of the channel to list videos for")),
 		mcp.WithNumber("max_results", mcp.Required(), mcp.Description("Maximum number of videos to return")),
 	)
-	s.AddTool(listMyChannelsTool, util.ErrorGuard(youtubeListVideosHandler))
+	s.AddTool(listMyChannelsTool, util.ErrorGuard(util.AdaptLegacyHandler(youtubeListVideosHandler)))
 
 }
 

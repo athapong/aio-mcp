@@ -22,7 +22,7 @@ func RegisterJiraTool(s *server.MCPServer) {
 		mcp.WithDescription("Retrieve detailed information about a specific Jira issue including its status, assignee, description, subtasks, and available transitions"),
 		mcp.WithString("issue_key", mcp.Required(), mcp.Description("The unique identifier of the Jira issue (e.g., KP-2, PROJ-123)")),
 	)
-	s.AddTool(jiraGetIssueTool, util.ErrorGuard(jiraIssueHandler))
+	s.AddTool(jiraGetIssueTool, util.ErrorGuard(util.AdaptLegacyHandler(jiraIssueHandler)))
 
 	// Search issues tool
 	jiraSearchTool := mcp.NewTool("jira_search_issue",
@@ -67,12 +67,12 @@ func RegisterJiraTool(s *server.MCPServer) {
 		mcp.WithString("comment", mcp.Description("Optional comment to add with transition")),
 	)
 
-	s.AddTool(jiraSearchTool, util.ErrorGuard(jiraSearchHandler))
-	s.AddTool(jiraListSprintTool, util.ErrorGuard(jiraListSprintHandler))
-	s.AddTool(jiraCreateIssueTool, util.ErrorGuard(jiraCreateIssueHandler))
-	s.AddTool(jiraUpdateIssueTool, util.ErrorGuard(jiraUpdateIssueHandler))
-	s.AddTool(jiraStatusListTool, util.ErrorGuard(jiraGetStatusesHandler))
-	s.AddTool(jiraTransitionTool, util.ErrorGuard(jiraTransitionIssueHandler))
+	s.AddTool(jiraSearchTool, util.ErrorGuard(util.AdaptLegacyHandler(jiraSearchHandler)))
+	s.AddTool(jiraListSprintTool, util.ErrorGuard(util.AdaptLegacyHandler(jiraListSprintHandler)))
+	s.AddTool(jiraCreateIssueTool, util.ErrorGuard(util.AdaptLegacyHandler(jiraCreateIssueHandler)))
+	s.AddTool(jiraUpdateIssueTool, util.ErrorGuard(util.AdaptLegacyHandler(jiraUpdateIssueHandler)))
+	s.AddTool(jiraStatusListTool, util.ErrorGuard(util.AdaptLegacyHandler(jiraGetStatusesHandler)))
+	s.AddTool(jiraTransitionTool, util.ErrorGuard(util.AdaptLegacyHandler(jiraTransitionIssueHandler)))
 }
 
 func jiraUpdateIssueHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {

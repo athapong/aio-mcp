@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -24,7 +25,8 @@ func RegisterFetchTool(s *server.MCPServer) {
 	s.AddTool(tool, util.ErrorGuard(fetchHandler))
 }
 
-func fetchHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func fetchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	url, ok := arguments["url"].(string)
 	if !ok {
 		return mcp.NewToolResultError("url must be a string"), nil

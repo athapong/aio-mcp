@@ -23,7 +23,7 @@ func RegisterWebSearchTool(s *server.MCPServer) {
 		mcp.WithString("country", mcp.DefaultString("ALL"), mcp.Description("Country code")),
 	)
 
-	s.AddTool(tool, util.ErrorGuard(webSearchHandler))
+	s.AddTool(tool, util.ErrorGuard(util.AdaptLegacyHandler(webSearchHandler)))
 }
 
 type SearchResult struct {

@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -28,7 +29,8 @@ func RegisterGChatTool(s *server.MCPServer) {
 	s.AddTool(sendMessageTool, util.ErrorGuard(gChatSendMessageHandler))
 }
 
-func gChatListSpacesHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func gChatListSpacesHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	// No arguments needed for this handler
 	spaces, err := services.DefaultGChatService().Spaces.List().Do()
 	if err != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("failed to list spaces: %v", err)), nil
@@ -52,7 +54,8 @@ func gChatListSpacesHandler(arguments map[string]interface{}) (*mcp.CallToolResu
 	return mcp.NewToolResultText(string(jsonResult)), nil
 }
 
-func gChatSendMessageHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func gChatSendMessageHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	spaceName := arguments["space_name"].(string)
 	message := arguments["message"].(string)
 

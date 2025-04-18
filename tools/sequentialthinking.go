@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/athapong/aio-mcp/util"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -252,9 +253,9 @@ You should:
 		mcp.WithString("summary", mcp.Description("Brief summary of the thought's key points")),
 	)
 
-	s.AddTool(sequentialThinkingTool, func(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+	s.AddTool(sequentialThinkingTool, util.ErrorGuard(util.AdaptLegacyHandler(func(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
 		return thinkingServer.processThought(arguments)
-	})
+	})))
 }
 
 // Move the history tool to its own registration function
@@ -264,7 +265,7 @@ func RegisterSequentialThinkingHistoryTool(s *server.MCPServer) {
 		mcp.WithString("branchId", mcp.Description("Optional branch ID to get history for")),
 	)
 
-	s.AddTool(historyTool, func(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+	s.AddTool(historyTool, util.ErrorGuard(util.AdaptLegacyHandler(func(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
 		var history []ThoughtData
 		if branchID, ok := arguments["branchId"].(string); ok && branchID != "" {
 			if branch, exists := thinkingServer.branches[branchID]; exists {
@@ -279,5 +280,5 @@ func RegisterSequentialThinkingHistoryTool(s *server.MCPServer) {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
 		return mcp.NewToolResultText(string(jsonResponse)), nil
-	})
+	})))
 }
