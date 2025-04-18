@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
+	"os/signal"
 	"slices"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/athapong/aio-mcp/prompts"
 	"github.com/athapong/aio-mcp/resources"
@@ -16,11 +21,15 @@ import (
 
 func main() {
 	envFile := flag.String("env", ".env", "Path to environment file")
+	enableSSE := flag.Bool("sse", false, "Enable SSE server")
+	sseAddr := flag.String("sse-addr", ":8080", "Address for SSE server to listen on")
+	sseBasePath := flag.String("sse-base-path", "/mcp", "Base path for SSE endpoints")
 	flag.Parse()
 
 	if err := godotenv.Load(*envFile); err != nil {
 		fmt.Printf("Warning: Error loading env file %s: %v\n", *envFile, err)
 	}
+	// Create MCP server
 	mcpServer := server.NewMCPServer(
 		"MyMCP",
 		"1.0.0",
@@ -109,7 +118,43 @@ func main() {
 		tools.RegisterGoogleMapTools(mcpServer)
 	}
 
-	if err := server.ServeStdio(mcpServer); err != nil {
-		panic(fmt.Sprintf("Server error: %v", err))
+	// Check if SSE server should be enabled
+	if *enableSSE || os.Getenv("ENABLE_SSE") == "true" {
+		// Create SSE server
+		sseServer := server.NewSSEServer(
+			mcpServer,
+			server.WithBasePath(*sseBasePath),
+			server.WithKeepAlive(true),
+		)
+
+		// Start SSE server in a goroutine
+		go func() {
+			log.Printf("Starting SSE server on %s with base path %s", *sseAddr, *sseBasePath)
+			if err := sseServer.Start(*sseAddr); err != nil {
+				log.Fatalf("Failed to start SSE server: %v", err)
+			}
+		}()
+
+		// Set up signal handling for graceful shutdown
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
+		// Wait for termination signal
+		sig := <-sigCh
+		log.Printf("Received signal %v, shutting down...", sig)
+
+		// Gracefully shutdown the SSE server
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := sseServer.Shutdown(ctx); err != nil {
+			log.Printf("Error during SSE server shutdown: %v", err)
+		}
+		log.Println("SSE server shutdown complete")
+	} else {
+		// Use stdio server as before
+		if err := server.ServeStdio(mcpServer); err != nil {
+			panic(fmt.Sprintf("Server error: %v", err))
+		}
 	}
 }

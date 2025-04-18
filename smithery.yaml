@@ -79,9 +79,63 @@ startCommand:
       description: Flag to use OpenRouter
     openrouterApiKey:
       type: string
-      description: API key for OpenRouter  
+      description: API key for OpenRouter
+    enableSse:
+      type: string
+      description: Flag to enable SSE server (true/false)
+    sseAddr:
+      type: string
+      description: Address for SSE server to listen on (e.g., :8080)
+    sseBasePath:
+      type: string
+      description: Base path for SSE endpoints (e.g., /mcp)
   commandFunction:
     # A function that produces the CLI command to start the MCP on stdio.
     |-
-    (config) => ({ command: './all-in-one-model-context-protocol', args: ['-env', '/path/to/.env'], env: { ENABLE_TOOLS: config.enableTools, QDRANT_HOST: config.qdrantHost, QDRANT_PORT: config.qdrantPort, QDRANT_API_KEY: config.qdrantApiKey, ATLASSIAN_HOST: config.atlassianHost, ATLASSIAN_EMAIL: config.atlassianEmail, ATLASSIAN_TOKEN: config.atlassianToken, GITLAB_HOST: config.gitlabHost, GITLAB_TOKEN: config.gitlabToken, BRAVE_API_KEY: config.braveApiKey, GOOGLE_AI_API_KEY: config.googleAiApiKey, PROXY_URL: config.proxyUrl, OPENAI_API_KEY: config.openaiApiKey, OPENAI_BASE_URL: config.openaiBaseUrl, OPENAI_EMBEDDING_MODEL: config.openaiEmbeddingModel, GOOGLE_TOKEN_FILE: config.googleTokenFile, GOOGLE_CREDENTIALS_FILE: config.googleCredentialsFile, GOOGLE_MAPS_API_KEY: config.googleMapsApiKey, DEEPSEEK_API_KEY: config.deepseekApiKey, USE_OLLAMA_DEEPSEEK: config.useOllamaDeepseek, USE_OPENROUTER: config.useOpenrouter, OPENROUTER_API_KEY: config.openrouterApiKey } })
-    
+    (config) => {
+      const args = ['-env', '/path/to/.env'];
+
+      // Add SSE-related args if SSE is enabled
+      if (config.enableSse === 'true') {
+        args.push('-sse');
+        if (config.sseAddr) {
+          args.push('-sse-addr', config.sseAddr);
+        }
+        if (config.sseBasePath) {
+          args.push('-sse-base-path', config.sseBasePath);
+        }
+      }
+
+      return {
+        command: './all-in-one-model-context-protocol',
+        args: args,
+        env: {
+          ENABLE_TOOLS: config.enableTools,
+          QDRANT_HOST: config.qdrantHost,
+          QDRANT_PORT: config.qdrantPort,
+          QDRANT_API_KEY: config.qdrantApiKey,
+          ATLASSIAN_HOST: config.atlassianHost,
+          ATLASSIAN_EMAIL: config.atlassianEmail,
+          ATLASSIAN_TOKEN: config.atlassianToken,
+          GITLAB_HOST: config.gitlabHost,
+          GITLAB_TOKEN: config.gitlabToken,
+          BRAVE_API_KEY: config.braveApiKey,
+          GOOGLE_AI_API_KEY: config.googleAiApiKey,
+          PROXY_URL: config.proxyUrl,
+          OPENAI_API_KEY: config.openaiApiKey,
+          OPENAI_BASE_URL: config.openaiBaseUrl,
+          OPENAI_EMBEDDING_MODEL: config.openaiEmbeddingModel,
+          GOOGLE_TOKEN_FILE: config.googleTokenFile,
+          GOOGLE_CREDENTIALS_FILE: config.googleCredentialsFile,
+          GOOGLE_MAPS_API_KEY: config.googleMapsApiKey,
+          DEEPSEEK_API_KEY: config.deepseekApiKey,
+          USE_OLLAMA_DEEPSEEK: config.useOllamaDeepseek,
+          USE_OPENROUTER: config.useOpenrouter,
+          OPENROUTER_API_KEY: config.openrouterApiKey,
+          ENABLE_SSE: config.enableSse,
+          SSE_ADDR: config.sseAddr,
+          SSE_BASE_PATH: config.sseBasePath
+        }
+      };
+    }
+
