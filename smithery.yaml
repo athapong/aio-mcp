@@ -6,12 +6,6 @@ startCommand:
     # JSON Schema defining the configuration options for the MCP.
     type: object
     required:
-      - braveApiKey
-      - gitlabHost
-      - gitlabToken
-      - atlassianHost
-      - atlassianEmail
-      - atlassianToken
     properties:
       enableTools:
         type: string
