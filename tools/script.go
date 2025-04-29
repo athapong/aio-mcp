@@ -30,7 +30,7 @@ func RegisterScriptTool(s *server.MCPServer) {
 		mcp.WithString("working_dir", mcp.DefaultString(currentUser.HomeDir), mcp.Description("Execution directory path (default: user home). Validated to prevent unauthorized access to system locations")),
 	)
 
-	s.AddTool(tool, util.ErrorGuard(scriptExecuteHandler))
+	s.AddTool(tool, util.ErrorGuard(util.AdaptLegacyHandler(scriptExecuteHandler)))
 }
 
 func scriptExecuteHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {

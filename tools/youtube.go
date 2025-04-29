@@ -29,7 +29,7 @@ func RegisterYouTubeTool(s *server.MCPServer) {
 		mcp.WithString("video_id", mcp.Required(), mcp.Description("YouTube video ID")),
 	)
 
-	s.AddTool(tool, util.ErrorGuard(youtubeTranscriptHandler))
+	s.AddTool(tool, util.ErrorGuard(util.AdaptLegacyHandler(youtubeTranscriptHandler)))
 }
 
 func youtubeTranscriptHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {

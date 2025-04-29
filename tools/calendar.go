@@ -81,7 +81,8 @@ var calendarService = sync.OnceValue(func() *calendar.Service {
 	return srv
 })
 
-func calendarCreateEventHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func calendarCreateEventHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	summary, _ := arguments["summary"].(string)
 	description, _ := arguments["description"].(string)
 	startTimeStr, _ := arguments["start_time"].(string)
@@ -124,7 +125,8 @@ func calendarCreateEventHandler(arguments map[string]interface{}) (*mcp.CallTool
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully created event with ID: %s", createdEvent.Id)), nil
 }
 
-func calendarListEventsHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func calendarListEventsHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	timeMinStr, ok := arguments["time_min"].(string)
 	if !ok || timeMinStr == "" {
 		timeMinStr = time.Now().Format(time.RFC3339)
@@ -171,7 +173,8 @@ func calendarListEventsHandler(arguments map[string]interface{}) (*mcp.CallToolR
 	return mcp.NewToolResultText(result.String()), nil
 }
 
-func calendarUpdateEventHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func calendarUpdateEventHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	eventID, _ := arguments["event_id"].(string)
 	summary, _ := arguments["summary"].(string)
 	description, _ := arguments["description"].(string)
@@ -220,7 +223,8 @@ func calendarUpdateEventHandler(arguments map[string]interface{}) (*mcp.CallTool
 	return mcp.NewToolResultText(fmt.Sprintf("Successfully updated event with ID: %s", updatedEvent.Id)), nil
 }
 
-func calendarRespondToEventHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func calendarRespondToEventHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	eventID, _ := arguments["event_id"].(string)
 	response, _ := arguments["response"].(string)
 

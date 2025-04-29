@@ -65,7 +65,8 @@ func RegisterConfluenceTool(s *server.MCPServer) {
 }
 
 // confluenceSearchHandler is a handler for the confluence search tool
-func confluenceSearchHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func confluenceSearchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	client := services.ConfluenceClient()
 
 	query, ok := arguments["query"].(string)
@@ -73,7 +74,7 @@ func confluenceSearchHandler(arguments map[string]interface{}) (*mcp.CallToolRes
 		return nil, fmt.Errorf("query argument is required")
 	}
 
-	ctx := context.Background()
+	// Use the provided context
 	options := &models.PageOptionsScheme{
 		PageIDs:    nil,
 		SpaceIDs:   nil,
@@ -136,7 +137,8 @@ SpaceId: %s
 	return mcp.NewToolResultText(results.String()), nil
 }
 
-func confluencePageHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func confluencePageHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	client := services.ConfluenceClient()
 
 	pageID, ok := arguments["page_id"].(string)
@@ -150,12 +152,12 @@ func confluencePageHandler(arguments map[string]interface{}) (*mcp.CallToolResul
 		return nil, fmt.Errorf("invalid page ID: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
 	// Use new Page.Get method with atlas_doc_format, setting version to 0 to get latest
 	// Setting draft=true to get only published content, version=-1 to get the latest version
-	page, response, err := client.Page.Get(ctx, pageIDInt, "atlas_doc_format", false, -1)
+	page, response, err := client.Page.Get(ctxWithTimeout, pageIDInt, "atlas_doc_format", false, -1)
 	if err != nil {
 		if response != nil {
 			return nil, fmt.Errorf("failed to get page: %s (endpoint: %s)", response.Bytes.String(), response.Endpoint)
@@ -261,7 +263,8 @@ func convertToADFNode(node *models.CommentNodeScheme) *adf.Node {
 }
 
 // confluenceCreatePageHandler handles the creation of new Confluence pages
-func confluenceCreatePageHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func confluenceCreatePageHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	client := services.ConfluenceClient()
 
 	// Extract required arguments
@@ -313,11 +316,11 @@ func confluenceCreatePageHandler(arguments map[string]interface{}) (*mcp.CallToo
 		},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
 	// Create the page with v2 API
-	page, response, err := client.Page.Create(ctx, payload)
+	page, response, err := client.Page.Create(ctxWithTimeout, payload)
 	if err != nil {
 		if response != nil {
 			return nil, fmt.Errorf("failed to create page: %s (endpoint: %s)", response.Bytes.String(), response.Endpoint)
@@ -336,7 +339,8 @@ func confluenceCreatePageHandler(arguments map[string]interface{}) (*mcp.CallToo
 }
 
 // confluenceUpdatePageHandler handles updating existing Confluence pages
-func confluenceUpdatePageHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func confluenceUpdatePageHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	client := services.ConfluenceClient()
 
 	// Extract required arguments
@@ -351,11 +355,11 @@ func confluenceUpdatePageHandler(arguments map[string]interface{}) (*mcp.CallToo
 		return nil, fmt.Errorf("invalid page ID: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
 	// Get current page to get its current content and version
-	page, response, err := client.Page.Get(ctx, pageIDInt, "atlas_doc_format", false, 0)
+	page, response, err := client.Page.Get(ctxWithTimeout, pageIDInt, "atlas_doc_format", false, 0)
 	if err != nil {
 		if response != nil {
 			return nil, fmt.Errorf("failed to get current page: %s (endpoint: %s)", response.Bytes.String(), response.Endpoint)
@@ -448,7 +452,8 @@ func confluenceUpdatePageHandler(arguments map[string]interface{}) (*mcp.CallToo
 }
 
 // Add this new handler function
-func confluenceCompareHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func confluenceCompareHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	client := services.ConfluenceClient()
 	if client == nil {
 		return nil, fmt.Errorf("failed to get Confluence client")
@@ -465,11 +470,11 @@ func confluenceCompareHandler(arguments map[string]interface{}) (*mcp.CallToolRe
 		return nil, fmt.Errorf("invalid page ID: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	// Get the latest version first
-	latestPage, response, err := client.Page.Get(ctx, pageIDInt, "atlas_doc_format", false, -1)
+	latestPage, response, err := client.Page.Get(ctxWithTimeout, pageIDInt, "atlas_doc_format", false, -1)
 	if err != nil {
 		if response != nil {
 			return nil, fmt.Errorf("failed to get latest version: %s (endpoint: %s)", response.Bytes.String(), response.Endpoint)

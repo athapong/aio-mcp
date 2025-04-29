@@ -40,7 +40,8 @@ func RegisterDeepseekTool(s *server.MCPServer) {
 	s.AddTool(reasoningTool, util.ErrorGuard(deepseekReasoningHandler))
 }
 
-func deepseekReasoningHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {
+func deepseekReasoningHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	arguments := request.Params.Arguments
 	systemPrompt, question, _ := buildMessages(arguments)
 
 	// Check if we should use Ollama
@@ -93,13 +94,14 @@ func buildMessages(arguments map[string]interface{}) (string, string, string) {
 }
 
 func callDeepseekAPI(messages []openai.ChatCompletionMessage) (*mcp.CallToolResult, error) {
+	ctx := context.Background()
 	client := services.DefaultDeepseekClient()
 	if client == nil {
 		return mcp.NewToolResultError("Deepseek client not properly initialized"), nil
 	}
 
 	resp, err := client.CreateChatCompletion(
-		context.Background(),
+		ctx,
 		openai.ChatCompletionRequest{
 			Model:       "deepseek-reasoner",
 			Messages:    messages,

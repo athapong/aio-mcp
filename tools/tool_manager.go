@@ -20,14 +20,14 @@ func RegisterToolManagerTool(s *server.MCPServer) {
 		mcp.WithString("tool_name", mcp.Description("Tool name to enable/disable")),
 	)
 
-	s.AddTool(tool, util.ErrorGuard(toolManagerHandler))
+	s.AddTool(tool, util.ErrorGuard(util.AdaptLegacyHandler(toolManagerHandler)))
 
 	planTool := mcp.NewTool("tool_use_plan",
 		mcp.WithDescription("Create a plan using available tools to solve the request"),
 		mcp.WithString("request", mcp.Required(), mcp.Description("Request to plan for")),
 		mcp.WithString("context", mcp.Required(), mcp.Description("Context related to the request")),
 	)
-	s.AddTool(planTool, util.ErrorGuard(toolUsePlanHandler))
+	s.AddTool(planTool, util.ErrorGuard(util.AdaptLegacyHandler(toolUsePlanHandler)))
 }
 
 func toolManagerHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {

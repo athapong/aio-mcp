@@ -17,7 +17,7 @@ func RegisterScreenshotTool(s *server.MCPServer) {
 	tool := mcp.NewTool("capture_screenshot",
 		mcp.WithDescription("Capture a screenshot of the entire screen"),
 	)
-	s.AddTool(tool, util.ErrorGuard(screenshotHandler))
+	s.AddTool(tool, util.ErrorGuard(util.AdaptLegacyHandler(screenshotHandler)))
 }
 
 func screenshotHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {

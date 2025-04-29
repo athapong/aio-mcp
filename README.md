@@ -90,6 +90,9 @@ GOOGLE_TOKEN_FILE=
 GOOGLE_CREDENTIALS_FILE=
 QDRANT_API_KEY=
 USE_OLLAMA_DEEPSEEK=
+ENABLE_SSE=
+SSE_ADDR=
+SSE_BASE_PATH=
 ```
 
 3. Config your claude's config:
@@ -99,8 +102,8 @@ USE_OLLAMA_DEEPSEEK=
   "mcpServers": {
     "aio-mcp": {
       "command": "aio-mcp",
-      "args": ["-env", "/path/to/.env"],
-      
+      "args": ["-env", "/path/to/.env", "-sse", "-sse-addr", ":8080", "-sse-base-path", "/mcp"],
+
     }
   }
 }
@@ -119,12 +122,12 @@ USE_OLLAMA_DEEPSEEK=
         "GITLAB_HOST": "",
         "QDRANT_HOST": "",
         "QDRANT_API_KEY": "",
-        
+
         "PROXY_URL": "",
         "OPENAI_API_KEY": "",
         "GOOGLE_TOKEN_FILE": "",
         "GOOGLE_CREDENTIALS_FILE": "",
-        
+
         "ATLASSIAN_TOKEN": "",
         "BRAVE_API_KEY": "",
         "QDRANT_PORT": "",
@@ -143,9 +146,39 @@ USE_OLLAMA_DEEPSEEK=
 }
 ```
 
+## Server Modes
+
+AIO-MCP Server supports two modes of operation:
+
+1. **Stdio Mode (Default)**: The server communicates via standard input/output, which is the default mode used by Claude Desktop and other MCP clients.
+
+2. **SSE (Server-Sent Events) Mode**: The server runs as an HTTP server that supports Server-Sent Events for real-time communication. This is useful for web-based clients or when you need to access the MCP server over a network.
+
+### Enabling SSE Mode
+
+You can enable SSE mode in one of two ways:
+
+1. **Command-line flags**:
+   ```bash
+   aio-mcp -sse -sse-addr ":8080" -sse-base-path "/mcp"
+   ```
+
+2. **Environment variables** (in your `.env` file):
+   ```
+   ENABLE_SSE=true
+   SSE_ADDR=:8080
+   SSE_BASE_PATH=/mcp
+   ```
+
+When SSE mode is enabled, the server will start an HTTP server that listens on the specified address. The server provides two endpoints:
+- SSE endpoint: `{SSE_BASE_PATH}/sse` (default: `/mcp/sse`)
+- Message endpoint: `{SSE_BASE_PATH}/message` (default: `/mcp/message`)
+
+Clients can connect to the SSE endpoint to receive server events and send messages to the message endpoint.
+
 ## Enable Tools
 
-There are a hidden variable `ENABLE_TOOLS` in the environment variable. It is a comma separated list of tools group to enable. If not set, all tools will be enabled. Leave it empty to enable all tools.
+There is a hidden variable `ENABLE_TOOLS` in the environment variable. It is a comma separated list of tools group to enable. If not set, all tools will be enabled. Leave it empty to enable all tools.
 
 
 Here is the list of tools group:
@@ -604,7 +637,7 @@ Safely execute command line scripts on the user's system with security restricti
 
 Arguments:
 
-- `content` (String) (Required): 
+- `content` (String) (Required):
 - `interpreter` (String) (Default: /bin/sh): Path to interpreter binary (e.g. /bin/sh, /bin/bash, /usr/bin/python, cmd.exe). Validated against allowed list for security
 - `working_dir` (String): Execution directory path (default: user home). Validated to prevent unauthorized access to system locations
 

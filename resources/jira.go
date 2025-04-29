@@ -21,7 +21,7 @@ func RegisterJiraResource(s *server.MCPServer) {
 	)
 
 	// Add resource with its handler
-	s.AddResourceTemplate(template, func(request mcp.ReadResourceRequest) ([]interface{}, error) {
+	s.AddResourceTemplate(template, func(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 
 		requestURI := request.Params.URI
 		issueKey := strings.TrimPrefix(requestURI, "jira://")
@@ -98,13 +98,11 @@ Available Transitions:
 			transitions,
 		)
 
-		return []interface{}{
+		return []mcp.ResourceContents{
 			mcp.TextResourceContents{
-				ResourceContents: mcp.ResourceContents{
-					URI:      "jira://" + issueKey,
-					MIMEType: "text/markdown",
-				},
-				Text: string(result),
+				URI:      "jira://" + issueKey,
+				MIMEType: "text/markdown",
+				Text:     string(result),
 			},
 		}, nil
 	})

@@ -113,13 +113,13 @@ func RegisterRagTools(s *server.MCPServer) {
 		mcp.WithString("filePath", mcp.Required(), mcp.Description("Path to the local file to be deleted")),
 	)
 
-	s.AddTool(createCollectionTool, util.ErrorGuard(createCollectionHandler))
-	s.AddTool(deleteCollectionTool, util.ErrorGuard(deleteCollectionHandler))
-	s.AddTool(listCollectionTool, util.ErrorGuard(listCollectionHandler))
-	s.AddTool(indexContentTool, util.ErrorGuard(indexContentHandler))
-	s.AddTool(searchTool, util.ErrorGuard(vectorSearchHandler))
-	s.AddTool(indexFileTool, util.ErrorGuard(indexFileHandler))
-	s.AddTool(deleteIndexByFilePathTool, util.ErrorGuard(deleteIndexByFilePathHandler))
+	s.AddTool(createCollectionTool, util.ErrorGuard(util.AdaptLegacyHandler(createCollectionHandler)))
+	s.AddTool(deleteCollectionTool, util.ErrorGuard(util.AdaptLegacyHandler(deleteCollectionHandler)))
+	s.AddTool(listCollectionTool, util.ErrorGuard(util.AdaptLegacyHandler(listCollectionHandler)))
+	s.AddTool(indexContentTool, util.ErrorGuard(util.AdaptLegacyHandler(indexContentHandler)))
+	s.AddTool(searchTool, util.ErrorGuard(util.AdaptLegacyHandler(vectorSearchHandler)))
+	s.AddTool(indexFileTool, util.ErrorGuard(util.AdaptLegacyHandler(indexFileHandler)))
+	s.AddTool(deleteIndexByFilePathTool, util.ErrorGuard(util.AdaptLegacyHandler(deleteIndexByFilePathHandler)))
 }
 
 func deleteIndexByFilePathHandler(arguments map[string]interface{}) (*mcp.CallToolResult, error) {

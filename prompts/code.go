@@ -1,6 +1,7 @@
 package prompts
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -15,8 +16,8 @@ func RegisterCodeTools(s *server.MCPServer) {
 	s.AddPrompt(tool, codeReviewHandler)
 }
 
-func codeReviewHandler(arguments map[string]string) (*mcp.GetPromptResult, error) {
-	developerName := arguments["developer_name"]
+func codeReviewHandler(ctx context.Context, request mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+	developerName := request.Params.Arguments["developer_name"]
 
 	return &mcp.GetPromptResult{
 		Description: fmt.Sprintf("Code reviewed by %s", developerName),

@@ -1,1 +1,28 @@
-bin
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go module cache
+/vendor/
+
+# Temporary files
+*.log
+*.tmp
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Node modules (if applicable)
+node_modules/
+
+# Environment variables
+.env
