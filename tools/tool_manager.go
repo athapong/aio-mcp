@@ -13,7 +13,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-func RegisterToolManagerTool(s *server.MCPServer, envFile string) {
+func RegisterToolManagerTool(s *server.MCPServer) {
 	tool := mcp.NewTool("tool_manager",
 		mcp.WithDescription("Manage MCP tools - enable or disable tools"),
 		mcp.WithString("action", mcp.Required(), mcp.Description("Action to perform: list, enable, disable")),
