@@ -38,7 +38,6 @@ func main() {
 		server.WithResourceCapabilities(true, true),
 	)
 
-	// Đăng ký tool manager với envFile từ flag
 	tools.RegisterToolManagerTool(mcpServer)
 
 	enableTools := strings.Split(os.Getenv("ENABLE_TOOLS"), ",")
