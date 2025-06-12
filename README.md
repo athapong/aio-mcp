@@ -1,6 +1,5 @@
 # AIO-MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@athapong/aio-mcp)](https://smithery.ai/server/@athapong/aio-mcp)
 A powerful Model Context Protocol (MCP) server implementation with integrations for GitLab, Jira, Confluence, YouTube, and more. This server provides AI-powered search capabilities and various utility tools for development workflows.
 
 ## Prerequisites
